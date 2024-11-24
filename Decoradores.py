@@ -1,13 +1,26 @@
-from Sandwich import Sandwich
+from Sandwich import Sandwich,Pollo
+
 
 class AdicionalDecorator(Sandwich):
     def __init__(self, sandwich):
+        """
+        Inicializa el decorador con un sandwich existente.
+        """
+        if not isinstance(sandwich, Sandwich):
+            raise TypeError("El objeto debe ser una instancia de Sandwich")
+        super().__init__(sandwich.tipo, sandwich.tamaño)
         self.sandwich = sandwich
 
     def getDescripcion(self):
+        """
+        Devuelve la descripción del sándwich decorado.
+        """
         return self.sandwich.getDescripcion()
 
     def getPrecio(self):
+        """
+        Devuelve el precio total del sándwich decorado.
+        """
         return self.sandwich.getPrecio()
 
 
@@ -16,7 +29,6 @@ class AdicionalDecorator(Sandwich):
 class Aguacate(AdicionalDecorator):
     def __init__(self, sandwich):
         super().__init__(sandwich)
-        # Condiciones basadas en el tamaño del sandwich
         self.precio_adicional = 1.5 if sandwich.getTamaño() == 15 else 2.0
 
     def getDescripcion(self):
@@ -29,7 +41,6 @@ class Aguacate(AdicionalDecorator):
 class DobleProteina(AdicionalDecorator):
     def __init__(self, sandwich):
         super().__init__(sandwich)
-        # Precios basados en el tamaño del sandwich
         self.precio_adicional = 4.5 if sandwich.getTamaño() == 15 else 6.0
 
     def getDescripcion(self):
@@ -42,7 +53,6 @@ class DobleProteina(AdicionalDecorator):
 class Hongos(AdicionalDecorator):
     def __init__(self, sandwich):
         super().__init__(sandwich)
-        # Precios basados en el tamaño del sandwich
         self.precio_adicional = 2.0 if sandwich.getTamaño() == 15 else 3.0
 
     def getDescripcion(self):
@@ -55,7 +65,6 @@ class Hongos(AdicionalDecorator):
 class Refresco(AdicionalDecorator):
     def __init__(self, sandwich):
         super().__init__(sandwich)
-        # Precio fijo para el refresco
         self.precio_adicional = 1.0
 
     def getDescripcion(self):
@@ -68,7 +77,6 @@ class Refresco(AdicionalDecorator):
 class Sopa(AdicionalDecorator):
     def __init__(self, sandwich):
         super().__init__(sandwich)
-        # Precios basados en el tamaño del sandwich
         self.precio_adicional = 3.5 if sandwich.getTamaño() == 15 else 4.2
 
     def getDescripcion(self):
@@ -81,7 +89,6 @@ class Sopa(AdicionalDecorator):
 class Postre(AdicionalDecorator):
     def __init__(self, sandwich):
         super().__init__(sandwich)
-        # Precios basados en el tamaño del sandwich
         self.precio_adicional = 2.5 if sandwich.getTamaño() == 15 else 3.0
 
     def getDescripcion(self):
@@ -89,3 +96,5 @@ class Postre(AdicionalDecorator):
 
     def getPrecio(self):
         return self.sandwich.getPrecio() + self.precio_adicional
+
+

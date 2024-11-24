@@ -1,10 +1,12 @@
 import sys
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QComboBox, QPushButton, QLabel,
-    QGroupBox, QScrollArea, QFormLayout, QListWidget, QAbstractItemView, QMessageBox, QSpinBox
+    QGroupBox, QScrollArea, QFormLayout, QListWidget, QAbstractItemView, QMessageBox, QSpinBox,
 )
-from SubWay.Sandwich import Pavo, Pollo, Beef, Italiano, Veggie, Atun, Combo
+from Sandwich import Pavo, Pollo, Beef, Italiano, Veggie, Atun, Combo
 from Decoradores import Aguacate, DobleProteina, Hongos, Refresco, Sopa, Postre
+from PyQt6.QtGui import QIcon
+import os
 
 
 class Visual(QWidget):
@@ -14,6 +16,8 @@ class Visual(QWidget):
         # Lista de sándwiches en la orden
         self.orden = []
         self.precio_total = 0.0
+        self.ico = os.path.join("Imagenes", "sub.ico")
+        self.setWindowIcon(QIcon(self.ico))
         self.initUI()
 
     def initUI(self):
@@ -108,29 +112,31 @@ class Visual(QWidget):
 
     def obtenerAdicionales(self):
         """
-        Obtiene la lista de decoradores (adicionales) seleccionados por el usuario.
+        Obtiene los decoradores seleccionados por el usuario y los aplica al último sándwich.
         """
-        adicionales = []
-        if self.spin_aguacate.value() > 0:
-            for _ in range(self.spin_aguacate.value()):
-                adicionales.append(Aguacate)
-        if self.spin_doble_proteina.value() > 0:
-            for _ in range(self.spin_doble_proteina.value()):
-                adicionales.append(DobleProteina)
-        if self.spin_hongos.value() > 0:
-            for _ in range(self.spin_hongos.value()):
-                adicionales.append(Hongos)
-        if self.spin_refresco.value() > 0:
-            for _ in range(self.spin_refresco.value()):
-                adicionales.append(Refresco)
-        if self.spin_sopa.value() > 0:
-            for _ in range(self.spin_sopa.value()):
-                adicionales.append(Sopa)
-        if self.spin_postre.value() > 0:
-            for _ in range(self.spin_postre.value()):
-                adicionales.append(Postre)
+        if not self.orden:
+            QMessageBox.warning(self, "Error", "Primero debes agregar un sándwich.")
+            return None
 
-        return adicionales
+        # Tomar el último sándwich agregado
+        sandwich_base = self.orden[-1]["sandwich"]
+
+        # Aplicar adicionales seleccionados como decoradores
+        for _ in range(self.spin_aguacate.value()):
+            sandwich_base = Aguacate(sandwich_base)
+        for _ in range(self.spin_doble_proteina.value()):
+            sandwich_base = DobleProteina(sandwich_base)
+        for _ in range(self.spin_hongos.value()):
+            sandwich_base = Hongos(sandwich_base)
+        for _ in range(self.spin_refresco.value()):
+            sandwich_base = Refresco(sandwich_base)
+        for _ in range(self.spin_sopa.value()):
+            sandwich_base = Sopa(sandwich_base)
+        for _ in range(self.spin_postre.value()):
+            sandwich_base = Postre(sandwich_base)
+
+        return sandwich_base
+
 
     def agregarSandwich(self):
         """
@@ -155,20 +161,31 @@ class Visual(QWidget):
 
     def agregarAdicionales(self):
         """
-        Agrega los adicionales al último sándwich agregado.
+        Agrega los adicionales seleccionados al último sándwich de la orden.
         """
         if not self.orden:
             QMessageBox.warning(self, "Error", "Primero debes agregar un sándwich.")
             return
 
-        # Obtener los adicionales seleccionados
-        adicionales = self.obtenerAdicionales()
+        # Obtener el sándwich actualizado con adicionales
+        sandwich_con_adicionales = self.obtenerAdicionales()
 
-        # Agregar los adicionales al último sándwich
-        self.orden[-1]["adicionales"] = adicionales
+        if sandwich_con_adicionales:
+            # Actualizar el último elemento de la orden con los adicionales aplicados
+            self.orden[-1]["sandwich"] = sandwich_con_adicionales
 
-        # Actualizar la orden
-        self.actualizarOrden()
+            # Limpiar los SpinBoxes
+            self.spin_aguacate.setValue(0)
+            self.spin_doble_proteina.setValue(0)
+            self.spin_hongos.setValue(0)
+            self.spin_refresco.setValue(0)
+            self.spin_sopa.setValue(0)
+            self.spin_postre.setValue(0)
+
+            # Actualizar la lista visual
+            self.actualizarOrden()
+
+
 
     def crearSandwich(self, tipo, tamaño):
         """
@@ -194,34 +211,30 @@ class Visual(QWidget):
         self.order_list.clear()
         self.precio_total = 0.0
 
-        # Mostrar cada sándwich con sus adicionales
+        # Mostrar cada sándwich y calcular el precio total
         for item in self.orden:
             sandwich = item["sandwich"]
-            adicionales = item["adicionales"]
             descripcion = sandwich.getDescripcion()
             precio = sandwich.getPrecio()
 
-            # Agregar adicionales y calcular precio
-            detalles_adicionales = []
-            for adicional in adicionales:
-                detalles_adicionales.append(adicional(sandwich).getDescripcion())
-                precio += adicional(sandwich).getPrecio()
-
-            # Mostrar en el resumen
-            if detalles_adicionales:
-                descripcion += " + " + " + ".join(detalles_adicionales)
+            # Agregar a la lista visual
             self.order_list.addItem(f"{descripcion} PRECIO ${precio:.2f}")
             self.precio_total += precio
 
         # Actualizar la etiqueta de precio total
         self.price_label.setText(f"Precio Total: ${self.precio_total:.2f}")
 
+
     def eliminarSandwich(self):
         """
         Elimina los sándwiches seleccionados de la orden.
         """
         selected_items = self.order_list.selectedItems()
-        
+
+        if not selected_items:
+            QMessageBox.warning(self, "Error", "No has seleccionado ningún sándwich para eliminar.")
+            return
+
         # List to store the indices of sandwiches to remove
         indices_to_remove = []
 
@@ -234,10 +247,10 @@ class Visual(QWidget):
 
                 # Crear una representación completa del sándwich con sus adicionales
                 descripcion_sandwich = sandwich.getDescripcion()
-                detalles_adicionales = [adicional(sandwich).getDescripcion() for adicional in adicionales]
+                detalles_adicionales = [adicional.getDescripcion() for adicional in adicionales]
                 descripcion_completa = descripcion_sandwich + (" + " + " + ".join(detalles_adicionales) if detalles_adicionales else "")
-                
-                # Normalizamos el texto para hacer comparaciones más robustas
+
+                # Compara con el texto de la UI (sólo la descripción sin el precio)
                 if descripcion_completa.strip() == item.text().split(' PRECIO')[0].strip():
                     indices_to_remove.append(idx)
                     break
@@ -249,17 +262,31 @@ class Visual(QWidget):
         # Actualizamos la interfaz de la orden después de la eliminación
         self.actualizarOrden()
 
+
+
     def confirmarOrden(self):
         """
-        Confirma la orden, mostrando un resumen detallado.
+        Confirma la orden, mostrando un resumen detallado y luego limpia la lista de la orden.
         """
         if not self.orden:
             QMessageBox.warning(self, "Error", "No has agregado ningún sándwich.")
             return
 
-        resumen = "\n".join([f"{sandwich['sandwich'].getDescripcion()} + {', '.join([ad.getDescripcion() for ad in sandwich['adicionales']])} PRECIO ${sandwich['sandwich'].getPrecio() + sum([ad.getPrecio() for ad in sandwich['adicionales']]):.2f}" for sandwich in self.orden])
+        # Crear el resumen de la orden
+        resumen = "\n".join(
+            [f"{sandwich['sandwich'].getDescripcion()} PRECIO ${sandwich['sandwich'].getPrecio():.2f}" for sandwich in self.orden]
+        )
+
+        # Mostrar el resumen
         QMessageBox.information(self, "Orden Confirmada",
                                 f"Resumen de tu orden:\n\n{resumen}\n\nPrecio Total: ${self.precio_total:.2f}")
+
+        # Limpiar la orden
+        self.orden.clear()
+        self.order_list.clear()
+        self.precio_total = 0.0
+        self.price_label.setText(f"Precio Total: ${self.precio_total:.2f}")
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
