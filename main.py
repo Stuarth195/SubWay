@@ -83,12 +83,13 @@ class Visual(QWidget):
         adicionales_layout = QFormLayout()
 
         # Cambié los Checkboxes por SpinBoxes
-        self.spin_aguacate = self.agregarSpinBox("Aguacate", adicionales_layout)
-        self.spin_doble_proteina = self.agregarSpinBox("Doble Proteína", adicionales_layout)
-        self.spin_hongos = self.agregarSpinBox("Hongos", adicionales_layout)
-        self.spin_refresco = self.agregarSpinBox("Refresco", adicionales_layout)
-        self.spin_sopa = self.agregarSpinBox("Sopa", adicionales_layout)
-        self.spin_postre = self.agregarSpinBox("Postre", adicionales_layout)
+        self.spin_aguacate = self.agregarSpinBox("Aguacate", 1.5, adicionales_layout)
+        self.spin_doble_proteina = self.agregarSpinBox("Doble Proteína", 4.5, adicionales_layout)
+        self.spin_hongos = self.agregarSpinBox("Hongos", 2.0, adicionales_layout)
+        self.spin_refresco = self.agregarSpinBox("Refresco", 1.0, adicionales_layout)
+        self.spin_sopa = self.agregarSpinBox("Sopa", 3.5, adicionales_layout)
+        self.spin_postre = self.agregarSpinBox("Postre", 2.5, adicionales_layout)
+
 
         adicionales_group.setLayout(adicionales_layout)
         main_layout.addWidget(adicionales_group)
@@ -104,39 +105,51 @@ class Visual(QWidget):
 
         self.setLayout(main_layout)
 
-    def agregarSpinBox(self, label, layout):
+    def agregarSpinBox(self, label, precio, layout):
         spin_box = QSpinBox(self)
-        spin_box.setRange(0, 10)  # Establecer el rango de repeticiones
-        layout.addRow(f"{label}:", spin_box)
+        spin_box.setRange(0, 10)  # Rango de repeticiones
+        layout.addRow(f"{label} - ${precio:.2f}:", spin_box)  # Agregar precio al texto
         return spin_box
 
+
     def obtenerAdicionales(self):
-        """
-        Obtiene los decoradores seleccionados por el usuario y los aplica al último sándwich.
-        """
         if not self.orden:
             QMessageBox.warning(self, "Error", "Primero debes agregar un sándwich.")
             return None
 
-        # Tomar el último sándwich agregado
         sandwich_base = self.orden[-1]["sandwich"]
+        adicionales = []
 
-        # Aplicar adicionales seleccionados como decoradores
+        # Agregar adicionales seleccionados
         for _ in range(self.spin_aguacate.value()):
-            sandwich_base = Aguacate(sandwich_base)
+            adicional = Aguacate(sandwich_base)
+            adicionales.append(adicional)
+            sandwich_base = adicional
         for _ in range(self.spin_doble_proteina.value()):
-            sandwich_base = DobleProteina(sandwich_base)
+            adicional = DobleProteina(sandwich_base)
+            adicionales.append(adicional)
+            sandwich_base = adicional
         for _ in range(self.spin_hongos.value()):
-            sandwich_base = Hongos(sandwich_base)
+            adicional = Hongos(sandwich_base)
+            adicionales.append(adicional)
+            sandwich_base = adicional
         for _ in range(self.spin_refresco.value()):
-            sandwich_base = Refresco(sandwich_base)
+            adicional = Refresco(sandwich_base)
+            adicionales.append(adicional)
+            sandwich_base = adicional
         for _ in range(self.spin_sopa.value()):
-            sandwich_base = Sopa(sandwich_base)
+            adicional = Sopa(sandwich_base)
+            adicionales.append(adicional)
+            sandwich_base = adicional
         for _ in range(self.spin_postre.value()):
-            sandwich_base = Postre(sandwich_base)
+            adicional = Postre(sandwich_base)
+            adicionales.append(adicional)
+            sandwich_base = adicional
 
+        # Actualizar el sandwich y guardar los adicionales
+        self.orden[-1]["sandwich"] = sandwich_base
+        self.orden[-1]["adicionales"] = adicionales
         return sandwich_base
-
 
     def agregarSandwich(self):
         """
@@ -211,18 +224,26 @@ class Visual(QWidget):
         self.order_list.clear()
         self.precio_total = 0.0
 
-        # Mostrar cada sándwich y calcular el precio total
         for item in self.orden:
             sandwich = item["sandwich"]
             descripcion = sandwich.getDescripcion()
             precio = sandwich.getPrecio()
 
-            # Agregar a la lista visual
-            self.order_list.addItem(f"{descripcion} PRECIO ${precio:.2f}")
+            # Construir desglose de adicionales
+            adicionales = item.get("adicionales", [])
+            desglose_adicionales = " + ".join([f"{adicional.getDescripcion()} (${adicional.precio_adicional:.2f})" for adicional in adicionales])
+
+            # Detalle completo en la orden
+            detalle = f"{descripcion} - ${precio:.2f}"
+            if desglose_adicionales:
+                detalle += f" [{desglose_adicionales}]"
+
+            self.order_list.addItem(detalle)
             self.precio_total += precio
 
         # Actualizar la etiqueta de precio total
         self.price_label.setText(f"Precio Total: ${self.precio_total:.2f}")
+
 
 
     def eliminarSandwich(self):
