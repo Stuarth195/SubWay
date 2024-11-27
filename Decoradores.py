@@ -1,4 +1,4 @@
-from Sandwich import Sandwich,Pollo
+from Sandwich import Sandwich
 
 
 class AdicionalDecorator(Sandwich):
